@@ -4,37 +4,21 @@ export type DiceFace = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type DiceResult = DiceFace;
 
-export interface Slot {
-  value: DiceFace;
-  filled: boolean;
-}
-
-export interface Fold {
-  id: number;
-  slots: Slot[];
-}
-
 export interface Player {
   id: string;
   name: string;
   colorIndex: number;
-  folds: Fold[];
+  /** Running totals, one per filled scoop, bottom (next to the cone) first. */
+  scoops: number[];
   finished: boolean;
-  /** Turn number (1-based) when the player finished, for ranking tie-break. */
-  finishedAtTurn: number | null;
-  /** Total coins placed, used for stats on the results screen. */
-  coinsPlaced: number;
   /** Total dice rolls taken by this player. */
   rollsTaken: number;
 }
 
-export type Screen = Exclude<GameStatus, 'home'> | 'home';
-
 export interface PlayerRanking {
   player: Player;
   rank: number;
-  totalSlots: number;
-  filledSlots: number;
+  total: number;
 }
 
 export interface GameState {
@@ -49,12 +33,12 @@ export interface GameState {
   message: string;
   /** Whether the dice is currently animating. */
   rolling: boolean;
-  /** The number of folds configured for this game. */
-  foldCount: number;
+  /** Scoops per cone for this game. */
+  stackSize: number;
 }
 
 export interface GameConfig {
   playerCount: number;
-  foldCount: number;
+  stackSize: number;
   playerNames: string[];
 }

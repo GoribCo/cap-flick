@@ -1,4 +1,4 @@
-import { Dices, Users, Layers, Play, Sparkles } from 'lucide-react';
+import { Dices, Users, IceCream, Play, Sparkles } from 'lucide-react';
 import { Dice } from './Dice';
 
 interface HomeScreenProps {
@@ -32,16 +32,16 @@ export function HomeScreen({ onNewGame }: HomeScreenProps) {
 
         <h1 className="font-display text-5xl font-bold tracking-tight text-white sm:text-7xl">
           <span className="bg-gradient-to-b from-gold-200 to-gold-500 bg-clip-text text-transparent">
-            Lucky
+            Dice
           </span>{' '}
           <span className="bg-gradient-to-b from-white to-felt-200 bg-clip-text text-transparent">
-            Ludu
+            Race
           </span>
         </h1>
 
         <p className="mt-4 max-w-sm text-base font-semibold text-white/70 sm:text-lg">
-          Roll the dice, fill your folds, and race to be the first to cover every number. Pure luck,
-          pure fun.
+          Roll the dice, add it up, and stack your ice cream scoops. When every cone is full, the
+          biggest total wins!
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
@@ -56,7 +56,7 @@ export function HomeScreen({ onNewGame }: HomeScreenProps) {
 
         <div className="mt-10 grid w-full max-w-md grid-cols-3 gap-3">
           <Feature icon={<Users className="h-5 w-5" />} label="2–6 players" />
-          <Feature icon={<Layers className="h-5 w-5" />} label="1–6 folds" />
+          <Feature icon={<IceCream className="h-5 w-5" />} label="3–15 scoops" />
           <Feature icon={<Sparkles className="h-5 w-5" />} label="Offline play" />
         </div>
 

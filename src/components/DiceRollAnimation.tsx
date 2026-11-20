@@ -11,6 +11,7 @@ interface DiceRollAnimationProps {
   onRollStart?: () => void;
   onRollEnd?: () => void;
   duration?: number;
+  showLabel?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ function DiceRollAnimationBase({
   onRollStart,
   onRollEnd,
   duration = 1000,
+  showLabel = true,
 }: DiceRollAnimationProps) {
   const [display, setDisplay] = useState<DiceFace>(value);
 
@@ -52,10 +54,10 @@ function DiceRollAnimationBase({
       <div className={rolling ? 'animate-shake' : ''} style={{ width: size, height: size }}>
         <Dice value={display} rolling={rolling} size={size} />
       </div>
-      <div className="flex items-center gap-2 text-white/70 text-sm font-semibold">
+      {showLabel && <div className="flex items-center gap-2 text-white/70 text-sm font-semibold">
         <Dices className="h-4 w-4" />
         <span>{rolling ? 'Rolling…' : value ? `Showing ${value}` : 'Ready to roll'}</span>
-      </div>
+      </div>}
     </div>
   );
 }

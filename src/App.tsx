@@ -1,19 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { GameConfig, GameState, Player, PlayerRanking } from '@/game/types';
+import { useEffect, useState } from 'react';
+import type { GameConfig, GameState } from '@/game/types';
 import {
   applyRoll,
   computeRankings,
   createPlayers,
+  currentTotal,
   defaultConfig,
-  isBoardComplete,
   rollDice,
-  RollOutcome,
 } from '@/game/engine';
 import { HomeScreen } from '@/components/HomeScreen';
 import { GameSetup } from '@/components/GameSetup';
 import { GameBoard } from '@/components/GameBoard';
 import { GameResults } from '@/components/GameResults';
 import { Confetti } from '@/components/Confetti';
+
+const ROLL_MS = 1000;
 
 function freshInitialState(): GameState {
   return {
@@ -25,29 +26,18 @@ function freshInitialState(): GameState {
     lastRoll: null,
     message: '',
     rolling: false,
-    foldCount: 3,
+    stackSize: defaultConfig().stackSize,
   };
-}
-
-function nextActiveIndex(players: Player[], from: number): number {
-  for (let i = 1; i <= players.length; i += 1) {
-    const idx = (from + i) % players.length;
-    if (!players[idx].finished) return idx;
-  }
-  return from;
 }
 
 export default function App() {
   const [state, setState] = useState<GameState>(freshInitialState);
   const [config, setConfig] = useState<GameConfig>(defaultConfig);
-  const [freshSlot, setFreshSlot] = useState<[number, number] | null>(null);
+  const [freshId, setFreshId] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
 
-  const startSetup = () =>
-    setState((s) => ({ ...s, status: 'setup' }));
-
-  const cancelSetup = () =>
-    setState((s) => ({ ...s, status: 'home' }));
+  const startSetup = () => setState((s) => ({ ...s, status: 'setup' }));
+  const cancelSetup = () => setState((s) => ({ ...s, status: 'home' }));
 
   const startGame = (cfg: GameConfig) => {
     setConfig(cfg);
@@ -59,158 +49,78 @@ export default function App() {
       turnNumber: 1,
       rankings: [],
       lastRoll: null,
-      message: `${players[0].name}'s turn — roll the dice!`,
+      message: `${players[0].name}, roll the dice!`,
       rolling: false,
-      foldCount: cfg.foldCount,
+      stackSize: cfg.stackSize,
     });
-    setFreshSlot(null);
+    setFreshId(null);
   };
 
   const handleRoll = () => {
-    if (state.rolling) return;
-    const active = state.players[state.activePlayerIndex];
-    if (!active || active.finished) return;
-
+    if (state.rolling || state.status !== 'playing') return;
+    const idx = state.activePlayerIndex;
+    const roller = state.players[idx];
     const roll = rollDice();
 
     setState((s) => ({ ...s, rolling: true, lastRoll: roll, message: '' }));
+    setFreshId(null);
 
     window.setTimeout(() => {
+      setFreshId(roller.id);
       setState((s) => {
-        const players = s.players.map((p) =>
-          p.id === active.id ? structuredClonePlayer(p) : p
-        ) as Player[];
-        const target = players[s.activePlayerIndex];
-        const outcome: RollOutcome = applyRoll(target, roll);
+        const players = s.players.map((p, i) => (i === idx ? applyRoll(p, roll, s.stackSize) : p));
+        const before = currentTotal(s.players[idx]);
+        const math = `${roller.name} rolled ${roll}: ${before} + ${roll} = ${before + roll}`;
 
-        setFreshSlot(outcome.slot);
-
-        // finished this roll?
-        if (outcome.finished) {
-          target.finished = true;
-          target.finishedAtTurn = s.turnNumber;
+        if (players.every((p) => p.finished)) {
+          return { ...s, players, rolling: false, message: math, rankings: computeRankings(players), status: 'results' };
         }
 
-        const allDone = players.every((p) => p.finished);
-
-        if (allDone) {
-          return {
-            ...s,
-            players,
-            rolling: false,
-            lastRoll: roll,
-            message: outcome.message,
-            rankings: computeRankings(players),
-            status: 'results',
-          };
-        }
-
-        if (outcome.rollAgain && !outcome.finished) {
-          return {
-            ...s,
-            players,
-            rolling: false,
-            lastRoll: roll,
-            message: outcome.message,
-          };
-        }
-
-        // turn ends → advance to next unfinished player
-        const nextIdx = nextActiveIndex(players, s.activePlayerIndex);
-        const advancedTurn = nextIdx <= s.activePlayerIndex ? s.turnNumber + 1 : s.turnNumber;
-        const nextName = players[nextIdx].name;
+        const nextIdx = (idx + 1) % players.length;
         return {
           ...s,
           players,
           rolling: false,
-          lastRoll: roll,
-          message: `${outcome.message} ${nextName}, you're up!`,
+          message: `${math} · ${players[nextIdx].name}'s turn`,
           activePlayerIndex: nextIdx,
-          turnNumber: advancedTurn,
+          turnNumber: nextIdx === 0 ? s.turnNumber + 1 : s.turnNumber,
         };
       });
-    }, 1000);
+    }, ROLL_MS);
   };
 
-  const handlePass = () => {
-    setState((s) => {
-      if (s.rolling) return s;
-      const active = s.players[s.activePlayerIndex];
-      if (!active || active.finished) return s;
-      const nextIdx = nextActiveIndex(s.players, s.activePlayerIndex);
-      const advancedTurn = nextIdx <= s.activePlayerIndex ? s.turnNumber + 1 : s.turnNumber;
-      return {
-        ...s,
-        lastRoll: null,
-        message: `${s.players[nextIdx].name}'s turn — roll the dice!`,
-        activePlayerIndex: nextIdx,
-        turnNumber: advancedTurn,
-      };
-    });
-    setFreshSlot(null);
-  };
-
-  // Celebrate when results screen appears
   useEffect(() => {
-    if (state.status === 'results') {
-      setCelebrate(true);
-      const t = window.setTimeout(() => setCelebrate(false), 5000);
-      return () => window.clearTimeout(t);
-    }
+    if (state.status !== 'results') return;
+    setCelebrate(true);
+    const t = window.setTimeout(() => setCelebrate(false), 5000);
+    return () => window.clearTimeout(t);
   }, [state.status]);
 
-  const playAgain = () => {
-    // same config, fresh boards
-    startGame(config);
-  };
-
-  const newGame = () => {
-    setState(freshInitialState());
-  };
-
-  const quitToSetup = () => {
-    setState((s) => ({ ...s, status: 'setup' }));
-  };
+  const newGame = () => setState(freshInitialState());
+  const quitToSetup = () => setState((s) => ({ ...s, status: 'setup' }));
 
   const screen = state.status;
   const activePlayer = state.players[state.activePlayerIndex];
-  const rankings: PlayerRanking[] = useMemo(
-    () => (state.status === 'results' ? state.rankings : []),
-    [state.status, state.rankings]
-  );
 
   return (
     <>
       {screen === 'home' && <HomeScreen onNewGame={startSetup} />}
-      {screen === 'setup' && (
-        <GameSetup initial={config} onCancel={cancelSetup} onStart={startGame} />
-      )}
+      {screen === 'setup' && <GameSetup initial={config} onCancel={cancelSetup} onStart={startGame} />}
       {screen === 'playing' && activePlayer && (
-        <GameBoard
-          state={state}
-          freshSlot={freshSlot}
-          onRoll={handleRoll}
-          onPass={handlePass}
-          onQuit={quitToSetup}
-          onHome={newGame}
-        />
+        <GameBoard state={state} freshId={freshId} onRoll={handleRoll} onQuit={quitToSetup} onHome={newGame} />
       )}
-      {screen === 'results' && rankings.length > 0 && (
+      {screen === 'results' && state.rankings.length > 0 && (
         <>
           {celebrate && <Confetti />}
-          <GameResults rankings={rankings} onPlayAgain={playAgain} onNewGame={newGame} />
+          <GameResults
+            rankings={state.rankings}
+            players={state.players}
+            stackSize={state.stackSize}
+            onPlayAgain={() => startGame(config)}
+            onNewGame={newGame}
+          />
         </>
       )}
     </>
   );
-}
-
-function structuredClonePlayer(p: Player): Player {
-  return {
-    ...p,
-    folds: p.folds.map((f) => ({
-      id: f.id,
-      slots: f.slots.map((s) => ({ ...s })),
-    })),
-  };
 }

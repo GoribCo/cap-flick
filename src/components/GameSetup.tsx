@@ -1,11 +1,11 @@
-import { ArrowLeft, Minus, Plus, Play, Users, Layers } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Play, Users, IceCream } from 'lucide-react';
 import { useState } from 'react';
 import type { GameConfig } from '@/game/types';
 import {
-  MAX_FOLDS,
   MAX_PLAYERS,
-  MIN_FOLDS,
+  MAX_STACK,
   MIN_PLAYERS,
+  MIN_STACK,
   PLAYER_COLORS,
   playerColor,
 } from '@/game/constants';
@@ -19,7 +19,7 @@ interface GameSetupProps {
 
 export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
   const [playerCount, setPlayerCount] = useState(initial.playerCount);
-  const [foldCount, setFoldCount] = useState(initial.foldCount);
+  const [stackSize, setStackSize] = useState(initial.stackSize);
   const [names, setNames] = useState<string[]>(() => {
     const base = [...initial.playerNames];
     while (base.length < MAX_PLAYERS) base.push(`Player ${base.length + 1}`);
@@ -37,13 +37,13 @@ export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
   const adjustPlayers = (delta: number) => {
     setPlayerCount((prev) => clamp(prev + delta, MIN_PLAYERS, MAX_PLAYERS));
   };
-  const adjustFolds = (delta: number) => {
-    setFoldCount((prev) => clamp(prev + delta, MIN_FOLDS, MAX_FOLDS));
+  const adjustStack = (delta: number) => {
+    setStackSize((prev) => clamp(prev + delta, MIN_STACK, MAX_STACK));
   };
 
   const start = () => {
     const finalNames = names.slice(0, playerCount).map((n, i) => n.trim() || `Player ${i + 1}`);
-    onStart({ playerCount, foldCount, playerNames: finalNames });
+    onStart({ playerCount, stackSize, playerNames: finalNames });
   };
 
   return (
@@ -90,32 +90,20 @@ export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
           </div>
         </section>
 
-        {/* Folds */}
+        {/* Scoops */}
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <SectionTitle icon={<Layers className="h-4 w-4" />} title="Folds per player">
-            <Stepper value={foldCount} min={MIN_FOLDS} max={MAX_FOLDS} onDec={() => adjustFolds(-1)} onInc={() => adjustFolds(1)} />
+          <SectionTitle icon={<IceCream className="h-4 w-4" />} title="Scoops per cone">
+            <Stepper value={stackSize} min={MIN_STACK} max={MAX_STACK} onDec={() => adjustStack(-1)} onInc={() => adjustStack(1)} />
           </SectionTitle>
 
           <p className="mt-3 text-xs font-semibold text-white/55">
-            Each fold has the numbers 1 through 6. You'll need{' '}
-            <span className="font-extrabold text-gold-300">{foldCount * 6}</span> coins to finish.
+            Everyone rolls <span className="font-extrabold text-gold-300">{stackSize}</span> times. Each roll is added
+            to your total and written in the next scoop.
           </p>
 
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {Array.from({ length: foldCount }, (_, f) => (
-              <div
-                key={f}
-                className="flex gap-1 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1"
-              >
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <span
-                    key={n}
-                    className="flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white/60"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </div>
+          <div className="mt-3 flex flex-wrap gap-1">
+            {Array.from({ length: stackSize }, (_, i) => (
+              <span key={i} className="h-4 w-5 rounded-[50%] border-2 border-white/40" />
             ))}
           </div>
         </section>

@@ -6,6 +6,7 @@ export default {
       fontFamily: {
         display: ['"Fredoka"', 'system-ui', 'sans-serif'],
         sans: ['"Nunito"', 'system-ui', 'sans-serif'],
+        hand: ['"Patrick Hand"', '"Comic Sans MS"', 'cursive'],
       },
       colors: {
         felt: {
