@@ -32,4 +32,4 @@ npm run build -- --base /dice-race/
 npm run preview -- --base /dice-race/
 ```
 
-Open http://localhost:4173/lucky-ludu/.
+Open http://localhost:4173/dice-race/.
