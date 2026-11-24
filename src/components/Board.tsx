@@ -17,14 +17,14 @@ interface BoardProps {
   onFlick: (drag: Vec) => void;
 }
 
-const SLOT_R = 2.3;
+const SLOT_R = 3;
 const SLOT_TOP = 36;
 const SLOT_BOTTOM = 142;
 
 /** Score column x: even players along the left edge, odd along the right, inward per extra seat. */
 function columnX(i: number) {
   const k = Math.floor(i / 2);
-  return i % 2 === 0 ? 4 + k * 6 : BOARD_W - 4 - k * 6;
+  return i % 2 === 0 ? 4.5 + k * 7.5 : BOARD_W - 4.5 - k * 7.5;
 }
 
 /** Slot j's y; bottom players fill from the bottom, top players from the top. */
@@ -84,7 +84,7 @@ export function Board({ state, onFlick }: BoardProps) {
         aria-label={`Board. ${players.map((p) => `${p.name} ${p.hits} of ${targetScore}`).join(', ')}`}
       >
         <rect width={BOARD_W} height={BOARD_H} rx={3} fill="#fdfcf8" />
-        <circle cx={TARGET.x} cy={TARGET.y} r={TARGET_R} fill="none" stroke="#1e293b" strokeWidth={0.8} />
+        <circle cx={TARGET.x} cy={TARGET.y} r={TARGET_R} fill="none" stroke="#efad1f" strokeWidth={1.2} className="target-glow" />
 
         {players.map((p, i) => {
           const color = playerColor(p.colorIndex).solid;
@@ -116,6 +116,19 @@ export function Board({ state, onFlick }: BoardProps) {
               {i !== active && (
                 <circle cx={s.x} cy={s.y} r={CAP_R} fill={color} opacity={0.4} />
               )}
+              <text
+                x={s.x}
+                y={s.y + START_R + 5}
+                textAnchor="middle"
+                fontSize={i === active ? 4.4 : 3.6}
+                fontWeight={i === active ? 800 : 600}
+                fill={i === active ? color : '#64748b'}
+                className={i === active ? 'name-glow font-display' : 'font-display'}
+                style={{ color }}
+              >
+                {/* shortcut: names cut at 8 chars so side-by-side seats do not overlap */}
+                {p.name.length > 8 ? `${p.name.slice(0, 7)}…` : p.name}
+              </text>
             </g>
           );
         })}

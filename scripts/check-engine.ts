@@ -6,8 +6,8 @@ import { BOARD_H, BOARD_W, CAP_R, MIN_DRAG, TARGET, TARGET_R } from '../src/game
 
 // hit test
 assert.ok(isHit(TARGET));
-assert.ok(isHit({ x: TARGET.x + TARGET_R - 0.01, y: TARGET.y }));
-assert.ok(!isHit({ x: TARGET.x + TARGET_R + 0.01, y: TARGET.y }));
+assert.ok(isHit({ x: TARGET.x + TARGET_R - CAP_R - 0.01, y: TARGET.y }));
+assert.ok(!isHit({ x: TARGET.x + TARGET_R - CAP_R + 0.01, y: TARGET.y })); // touching the line is a miss
 
 // short drag cancels
 assert.equal(launchVelocity({ x: 0, y: MIN_DRAG - 0.1 }), null);
@@ -27,7 +27,7 @@ for (let p = 0; p < 6; p++) {
 }
 
 // ~60 % drag straight at the target from the bottom start lands in it (tuning sanity)
-const toTarget = simulate({ pos: startPos(0), vel: launchVelocity({ x: 0, y: 18 })!, moving: true });
+const toTarget = simulate({ pos: startPos(0), vel: launchVelocity({ x: 0, y: 17 })!, moving: true });
 assert.ok(isHit(toTarget.pos), `60% drag ended at ${JSON.stringify(toTarget.pos)}`);
 
 // turns rotate on hit and miss; reaching targetScore ends the game

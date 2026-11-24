@@ -14,14 +14,14 @@ export const START_R = 6;
 export const TARGET = { x: 50, y: 89 } as const;
 export const TARGET_R = 14;
 /** Even players start at the bottom, odd players at the top (SRS: player 1 bottom, player 2 top). */
-export const START_Y = { top: 18, bottom: 160 } as const;
+export const START_Y = { top: 26, bottom: 152 } as const;
 /** Start x per seat on a side; seat 0 is the centre like the video. */
-export const START_X = [50, 28, 72] as const;
+export const START_X = [50, 31, 69] as const;
 
 export const MAX_DRAG = 30;
 export const MIN_DRAG = 3;
-/** Launch speed per board unit of drag. Full drag travels ~197 units, 60 % drag ~71 (start to target). */
-export const POWER = 7.25;
+/** Launch speed per board unit of drag. Full drag travels ~175 units, 60 % drag ~63 (start to target). */
+export const POWER = 6.85;
 /** Constant deceleration, units/s². */
 export const FRICTION = 120;
 export const STOP_V = 0.5;

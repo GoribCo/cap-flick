@@ -1,5 +1,6 @@
 import type { Cap, GameConfig, GameState, Player, Vec } from './types.ts';
 import {
+  CAP_R,
   DEFAULT_TARGET,
   MAX_DRAG,
   MAX_PLAYERS,
@@ -76,8 +77,9 @@ export function launchVelocity(drag: Vec): Vec | null {
   return { x: (-drag.x / len) * speed, y: (-drag.y / len) * speed };
 }
 
+/** Hit only when the whole cap is inside the target, not touching its line. */
 export function isHit(pos: Vec): boolean {
-  return Math.hypot(pos.x - TARGET.x, pos.y - TARGET.y) < TARGET_R;
+  return Math.hypot(pos.x - TARGET.x, pos.y - TARGET.y) + CAP_R < TARGET_R;
 }
 
 /** Score the active player's flick, then end the game or pass the turn with a fresh cap. */

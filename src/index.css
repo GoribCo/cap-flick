@@ -22,6 +22,30 @@ body {
   overscroll-behavior: none;
 }
 
+/* ---------- Glowing target ring ---------- */
+.target-glow {
+  animation: target-glow 1.8s ease-in-out infinite;
+}
+@keyframes target-glow {
+  0%, 100% { filter: drop-shadow(0 0 1px #efad1f); }
+  50% { filter: drop-shadow(0 0 4px #efad1f) drop-shadow(0 0 8px #f59e0b); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .target-glow { animation: none; filter: drop-shadow(0 0 3px #efad1f); }
+}
+
+/* Active player's name under their start circle; color is the player's colour */
+.name-glow {
+  animation: name-glow 1.4s ease-in-out infinite;
+}
+@keyframes name-glow {
+  0%, 100% { filter: drop-shadow(0 0 0.5px currentColor); }
+  50% { filter: drop-shadow(0 0 2.5px currentColor); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .name-glow { animation: none; filter: drop-shadow(0 0 1.5px currentColor); }
+}
+
 /* ---------- Custom scrollbar ---------- */
 .scroll-area {
   scrollbar-width: thin;
