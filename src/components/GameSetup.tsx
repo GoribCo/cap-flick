@@ -1,15 +1,8 @@
-import { ArrowLeft, Minus, Plus, Play, Users, IceCream } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Play, Users, Target } from 'lucide-react';
 import { useState } from 'react';
 import type { GameConfig } from '@/game/types';
-import {
-  MAX_PLAYERS,
-  MAX_STACK,
-  MIN_PLAYERS,
-  MIN_STACK,
-  PLAYER_COLORS,
-  playerColor,
-} from '@/game/constants';
-import { clamp } from '@/game/engine';
+import { MAX_PLAYERS, MAX_TARGET, MIN_PLAYERS, MIN_TARGET, playerColor } from '@/game/constants';
+import { clamp, defaultName } from '@/game/engine';
 
 interface GameSetupProps {
   initial: GameConfig;
@@ -18,13 +11,11 @@ interface GameSetupProps {
 }
 
 export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
-  const [playerCount, setPlayerCount] = useState(initial.playerCount);
-  const [stackSize, setStackSize] = useState(initial.stackSize);
-  const [names, setNames] = useState<string[]>(() => {
-    const base = [...initial.playerNames];
-    while (base.length < MAX_PLAYERS) base.push(`Player ${base.length + 1}`);
-    return base;
-  });
+  const [playerCount, setPlayerCount] = useState(initial.playerNames.length);
+  const [targetScore, setTargetScore] = useState(initial.targetScore);
+  const [names, setNames] = useState<string[]>(() =>
+    Array.from({ length: MAX_PLAYERS }, (_, i) => initial.playerNames[i] ?? defaultName(i))
+  );
 
   const updateName = (i: number, value: string) => {
     setNames((prev) => {
@@ -37,13 +28,13 @@ export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
   const adjustPlayers = (delta: number) => {
     setPlayerCount((prev) => clamp(prev + delta, MIN_PLAYERS, MAX_PLAYERS));
   };
-  const adjustStack = (delta: number) => {
-    setStackSize((prev) => clamp(prev + delta, MIN_STACK, MAX_STACK));
+  const adjustTarget = (delta: number) => {
+    setTargetScore((prev) => clamp(prev + delta, MIN_TARGET, MAX_TARGET));
   };
 
   const start = () => {
-    const finalNames = names.slice(0, playerCount).map((n, i) => n.trim() || `Player ${i + 1}`);
-    onStart({ playerCount, stackSize, playerNames: finalNames });
+    const playerNames = names.slice(0, playerCount).map((n, i) => n.trim() || defaultName(i));
+    onStart({ playerNames, targetScore });
   };
 
   return (
@@ -81,7 +72,7 @@ export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
                     value={names[i]}
                     onChange={(e) => updateName(i, e.target.value)}
                     maxLength={14}
-                    placeholder={`Player ${i + 1}`}
+                    placeholder={defaultName(i)}
                     className="w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-semibold text-white placeholder-white/40 outline-none transition focus:border-white/40 focus:bg-white/15"
                   />
                 </div>
@@ -90,38 +81,20 @@ export function GameSetup({ initial, onCancel, onStart }: GameSetupProps) {
           </div>
         </section>
 
-        {/* Scoops */}
+        {/* Score circles */}
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <SectionTitle icon={<IceCream className="h-4 w-4" />} title="Scoops per cone">
-            <Stepper value={stackSize} min={MIN_STACK} max={MAX_STACK} onDec={() => adjustStack(-1)} onInc={() => adjustStack(1)} />
+          <SectionTitle icon={<Target className="h-4 w-4" />} title="Circles to fill">
+            <Stepper value={targetScore} min={MIN_TARGET} max={MAX_TARGET} onDec={() => adjustTarget(-1)} onInc={() => adjustTarget(1)} />
           </SectionTitle>
 
           <p className="mt-3 text-xs font-semibold text-white/55">
-            Everyone rolls <span className="font-extrabold text-gold-300">{stackSize}</span> times. Each roll is added
-            to your total and written in the next scoop.
+            Each cap that stops inside the big circle fills one of your circles. First to fill all{' '}
+            <span className="font-extrabold text-gold-300">{targetScore}</span> wins.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-1">
-            {Array.from({ length: stackSize }, (_, i) => (
-              <span key={i} className="h-4 w-5 rounded-[50%] border-2 border-white/40" />
-            ))}
-          </div>
-        </section>
-
-        {/* Color preview */}
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <SectionTitle icon={<span className="h-3 w-3 rounded-full bg-gradient-to-r from-lucky-400 to-gold-400" />} title="Player colors">
-            <span />
-          </SectionTitle>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {PLAYER_COLORS.slice(0, playerCount).map((c, i) => (
-              <span
-                key={i}
-                className={`flex items-center gap-1.5 rounded-full ${c.bgSoft} px-2.5 py-1 text-xs font-bold ${c.text}`}
-              >
-                <span className={`h-3 w-3 rounded-full ${c.bg}`} />
-                {names[i]?.trim() || `Player ${i + 1}`}
-              </span>
+            {Array.from({ length: targetScore }, (_, i) => (
+              <span key={i} className="h-4 w-4 rounded-full border-2 border-white/40" />
             ))}
           </div>
         </section>
@@ -175,6 +148,7 @@ function Stepper({
     <div className="flex items-center gap-2">
       <button
         onClick={onDec}
+        aria-label="Decrease"
         disabled={value <= min}
         className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-90 disabled:opacity-30"
       >
@@ -183,6 +157,7 @@ function Stepper({
       <span className="w-8 text-center text-lg font-extrabold tabular-nums text-white">{value}</span>
       <button
         onClick={onInc}
+        aria-label="Increase"
         disabled={value >= max}
         className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-90 disabled:opacity-30"
       >

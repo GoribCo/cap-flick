@@ -1,5 +1,19 @@
-import type { DiceResult, GameConfig, Player, PlayerRanking } from './types';
-import { DEFAULT_STACK, MAX_PLAYERS, MAX_STACK, MIN_PLAYERS, MIN_STACK } from './constants';
+import type { Cap, GameConfig, GameState, Player, Vec } from './types.ts';
+import {
+  DEFAULT_TARGET,
+  MAX_DRAG,
+  MAX_PLAYERS,
+  MAX_TARGET,
+  MIN_DRAG,
+  MIN_PLAYERS,
+  MIN_TARGET,
+  PLAYER_COLORS,
+  POWER,
+  START_X,
+  START_Y,
+  TARGET,
+  TARGET_R,
+} from './constants.ts';
 
 let idCounter = 0;
 export function uid(prefix = 'id'): string {
@@ -7,51 +21,73 @@ export function uid(prefix = 'id'): string {
   return `${prefix}-${idCounter}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export function createPlayers(config: GameConfig): Player[] {
-  const safeCount = clamp(config.playerCount, MIN_PLAYERS, MAX_PLAYERS);
-  return Array.from({ length: safeCount }, (_, i) => ({
-    id: uid('p'),
-    name: config.playerNames[i]?.trim() || `Player ${i + 1}`,
-    colorIndex: i,
-    scoops: [],
-    finished: false,
-    rollsTaken: 0,
-  }));
-}
-
 export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-export function rollDice(): DiceResult {
-  return (Math.floor(Math.random() * 6) + 1) as DiceResult;
-}
-
-export function currentTotal(player: Player): number {
-  return player.scoops[player.scoops.length - 1] ?? 0;
-}
-
-/** Add the roll to the running total and fill the next scoop. Returns a new player. */
-export function applyRoll(player: Player, roll: DiceResult, stackSize: number): Player {
-  const before = currentTotal(player);
-  const scoops = [...player.scoops, before + roll];
-  return { ...player, scoops, rollsTaken: player.rollsTaken + 1, finished: scoops.length >= stackSize };
-}
-
-/** Highest final total wins. Equal totals share a rank. */
-export function computeRankings(players: Player[]): PlayerRanking[] {
-  const sorted = [...players].sort((a, b) => currentTotal(b) - currentTotal(a));
-  return sorted.map((player) => ({
-    player,
-    total: currentTotal(player),
-    rank: 1 + sorted.filter((p) => currentTotal(p) > currentTotal(player)).length,
-  }));
+export function defaultName(i: number): string {
+  return PLAYER_COLORS[i].name;
 }
 
 export function defaultConfig(): GameConfig {
+  return { playerNames: [defaultName(0), defaultName(1)], targetScore: DEFAULT_TARGET };
+}
+
+export function createPlayers(cfg: GameConfig): Player[] {
+  const count = clamp(cfg.playerNames.length, MIN_PLAYERS, MAX_PLAYERS);
+  return Array.from({ length: count }, (_, i) => ({
+    id: uid('p'),
+    name: cfg.playerNames[i]?.trim() || defaultName(i),
+    colorIndex: i,
+    hits: 0,
+    flicks: 0,
+  }));
+}
+
+/** Player 0 bottom centre, 1 top centre, then further seats left/right of centre on alternating sides. */
+export function startPos(playerIndex: number): Vec {
+  const bottom = playerIndex % 2 === 0;
+  const seat = Math.floor(playerIndex / 2);
+  // mirror the top row so each top seat faces its bottom counterpart diagonally
+  const x = bottom ? START_X[seat] : 100 - START_X[seat];
+  return { x, y: bottom ? START_Y.bottom : START_Y.top };
+}
+
+export function restingCap(playerIndex: number): Cap {
+  return { pos: startPos(playerIndex), vel: { x: 0, y: 0 }, moving: false };
+}
+
+export function newGame(cfg: GameConfig): GameState {
   return {
-    playerCount: MIN_PLAYERS,
-    stackSize: clamp(DEFAULT_STACK, MIN_STACK, MAX_STACK),
-    playerNames: ['Player 1', 'Player 2'],
+    status: 'playing',
+    players: createPlayers(cfg),
+    active: 0,
+    cap: restingCap(0),
+    lastResult: null,
+    targetScore: clamp(cfg.targetScore, MIN_TARGET, MAX_TARGET),
   };
+}
+
+/** Drag is pointer minus cap centre; the cap launches the opposite way. Null if too short (FR-9). */
+export function launchVelocity(drag: Vec): Vec | null {
+  const len = Math.hypot(drag.x, drag.y);
+  if (len < MIN_DRAG) return null;
+  const speed = POWER * Math.min(len, MAX_DRAG);
+  return { x: (-drag.x / len) * speed, y: (-drag.y / len) * speed };
+}
+
+export function isHit(pos: Vec): boolean {
+  return Math.hypot(pos.x - TARGET.x, pos.y - TARGET.y) < TARGET_R;
+}
+
+/** Score the active player's flick, then end the game or pass the turn with a fresh cap. */
+export function applyResult(state: GameState, hit: boolean): GameState {
+  const players = state.players.map((p, i) =>
+    i === state.active ? { ...p, hits: p.hits + (hit ? 1 : 0), flicks: p.flicks + 1 } : p
+  );
+  if (players[state.active].hits >= state.targetScore) {
+    return { ...state, players, lastResult: null, status: 'results' };
+  }
+  const active = (state.active + 1) % players.length;
+  return { ...state, players, active, cap: restingCap(active), lastResult: null };
 }

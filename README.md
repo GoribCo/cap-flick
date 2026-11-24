@@ -1,8 +1,9 @@
-# Dice Race
+# Cap Flick
 
-A browser dice game for 2 to 6 players, built with React, TypeScript, and Vite.
-Players take turns rolling, add each roll to their running total, and fill an ice cream cone of scoops.
-When every cone is full, the highest total wins. See `docs/steps.md` for the paper version.
+A hot-seat bottle-cap flicking game for 2 to 6 players on one device, built with React, TypeScript, and Vite.
+Players take turns pressing on their cap, dragging back, and letting go to flick it at the big circle in the middle.
+A cap that stops with its centre inside the circle fills one of that player's score circles (6 to 12, default 6).
+The first player to fill all their circles wins. Full spec: `docs/srs.md`.
 
 ## Local development
 
@@ -11,6 +12,7 @@ Use Node.js 22 and npm:
 ```sh
 npm ci
 npm run dev
+npm run check   # engine + physics self-check (Node 22.18+, no extra deps)
 ```
 
 ## Deploy to GitHub Pages

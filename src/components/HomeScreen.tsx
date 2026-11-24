@@ -1,5 +1,4 @@
-import { Dices, Users, IceCream, Play, Sparkles } from 'lucide-react';
-import { Dice } from './Dice';
+import { Users, Target, Play, Sparkles, Hand } from 'lucide-react';
 
 interface HomeScreenProps {
   onNewGame: () => void;
@@ -12,36 +11,25 @@ export function HomeScreen({ onNewGame }: HomeScreenProps) {
       <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-lucky-500/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl" />
 
-      {/* floating mini dice */}
-      <div className="pointer-events-none absolute left-8 top-24 opacity-40 animate-floatUp">
-        <Dice value={5} rolling={false} size={48} />
-      </div>
-      <div className="pointer-events-none absolute right-10 top-40 opacity-40">
-        <Dice value={3} rolling={false} size={40} />
-      </div>
-      <div className="pointer-events-none absolute bottom-28 left-12 opacity-30">
-        <Dice value={1} rolling={false} size={36} />
-      </div>
-
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className="mb-6 animate-bannerIn">
           <div className="flex items-center justify-center">
-            <Dice value={6} rolling={false} size={96} />
+            <Target className="h-24 w-24 text-gold-300" strokeWidth={1.5} />
           </div>
         </div>
 
         <h1 className="font-display text-5xl font-bold tracking-tight text-white sm:text-7xl">
           <span className="bg-gradient-to-b from-gold-200 to-gold-500 bg-clip-text text-transparent">
-            Dice
+            Cap
           </span>{' '}
           <span className="bg-gradient-to-b from-white to-felt-200 bg-clip-text text-transparent">
-            Race
+            Flick
           </span>
         </h1>
 
         <p className="mt-4 max-w-sm text-base font-semibold text-white/70 sm:text-lg">
-          Roll the dice, add it up, and stack your ice cream scoops. When every cone is full, the
-          biggest total wins!
+          Take turns flicking your cap at the big circle. Stop inside it to fill one of your circles.
+          First to fill them all wins!
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
@@ -56,12 +44,12 @@ export function HomeScreen({ onNewGame }: HomeScreenProps) {
 
         <div className="mt-10 grid w-full max-w-md grid-cols-3 gap-3">
           <Feature icon={<Users className="h-5 w-5" />} label="2–6 players" />
-          <Feature icon={<IceCream className="h-5 w-5" />} label="3–15 scoops" />
+          <Feature icon={<Target className="h-5 w-5" />} label="6–12 circles" />
           <Feature icon={<Sparkles className="h-5 w-5" />} label="Offline play" />
         </div>
 
         <div className="mt-8 flex items-center gap-2 text-xs font-semibold text-white/40">
-          <Dices className="h-4 w-4" />
+          <Hand className="h-4 w-4" />
           Pass-and-play · single device · no internet needed
         </div>
       </div>

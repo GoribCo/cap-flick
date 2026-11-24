@@ -1,93 +1,75 @@
-import { useEffect, useState } from 'react';
-import type { GameConfig, GameState } from '@/game/types';
-import {
-  applyRoll,
-  computeRankings,
-  createPlayers,
-  currentTotal,
-  defaultConfig,
-  rollDice,
-} from '@/game/engine';
+import { useEffect, useRef, useState } from 'react';
+import type { GameConfig, GameState, Vec } from '@/game/types';
+import { applyResult, defaultConfig, isHit, launchVelocity, newGame, restingCap } from '@/game/engine';
+import { step } from '@/game/physics';
+import { DT, RESULT_MS } from '@/game/constants';
 import { HomeScreen } from '@/components/HomeScreen';
 import { GameSetup } from '@/components/GameSetup';
 import { GameBoard } from '@/components/GameBoard';
 import { GameResults } from '@/components/GameResults';
 import { Confetti } from '@/components/Confetti';
 
-const ROLL_MS = 1000;
-
-function freshInitialState(): GameState {
+function homeState(): GameState {
   return {
     status: 'home',
     players: [],
-    activePlayerIndex: 0,
-    turnNumber: 1,
-    rankings: [],
-    lastRoll: null,
-    message: '',
-    rolling: false,
-    stackSize: defaultConfig().stackSize,
+    active: 0,
+    cap: restingCap(0),
+    lastResult: null,
+    targetScore: defaultConfig().targetScore,
   };
 }
 
 export default function App() {
-  const [state, setState] = useState<GameState>(freshInitialState);
+  const [state, setState] = useState<GameState>(homeState);
   const [config, setConfig] = useState<GameConfig>(defaultConfig);
-  const [freshId, setFreshId] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-
-  const startSetup = () => setState((s) => ({ ...s, status: 'setup' }));
-  const cancelSetup = () => setState((s) => ({ ...s, status: 'home' }));
 
   const startGame = (cfg: GameConfig) => {
     setConfig(cfg);
-    const players = createPlayers(cfg);
-    setState({
-      status: 'playing',
-      players,
-      activePlayerIndex: 0,
-      turnNumber: 1,
-      rankings: [],
-      lastRoll: null,
-      message: `${players[0].name}, roll the dice!`,
-      rolling: false,
-      stackSize: cfg.stackSize,
-    });
-    setFreshId(null);
+    setState(newGame(cfg));
   };
 
-  const handleRoll = () => {
-    if (state.rolling || state.status !== 'playing') return;
-    const idx = state.activePlayerIndex;
-    const roller = state.players[idx];
-    const roll = rollDice();
-
-    setState((s) => ({ ...s, rolling: true, lastRoll: roll, message: '' }));
-    setFreshId(null);
-
-    window.setTimeout(() => {
-      setFreshId(roller.id);
-      setState((s) => {
-        const players = s.players.map((p, i) => (i === idx ? applyRoll(p, roll, s.stackSize) : p));
-        const before = currentTotal(s.players[idx]);
-        const math = `${roller.name} rolled ${roll}: ${before} + ${roll} = ${before + roll}`;
-
-        if (players.every((p) => p.finished)) {
-          return { ...s, players, rolling: false, message: math, rankings: computeRankings(players), status: 'results' };
-        }
-
-        const nextIdx = (idx + 1) % players.length;
-        return {
-          ...s,
-          players,
-          rolling: false,
-          message: `${math} · ${players[nextIdx].name}'s turn`,
-          activePlayerIndex: nextIdx,
-          turnNumber: nextIdx === 0 ? s.turnNumber + 1 : s.turnNumber,
-        };
-      });
-    }, ROLL_MS);
+  const handleFlick = (drag: Vec) => {
+    const vel = launchVelocity(drag);
+    if (!vel) return;
+    setState((s) =>
+      s.cap.moving || s.lastResult ? s : { ...s, cap: { ...s.cap, vel, moving: true } }
+    );
   };
+
+  // Physics loop: fixed DT steps, independent of frame rate (FR-14).
+  const capRef = useRef(state.cap);
+  capRef.current = state.cap;
+  const moving = state.cap.moving;
+  useEffect(() => {
+    if (!moving) return;
+    let cap = capRef.current;
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+    const frame = (now: number) => {
+      acc += Math.min((now - last) / 1000, 0.1); // clamp so a background tab does not jump
+      last = now;
+      while (acc >= DT && cap.moving) {
+        cap = step(cap, DT);
+        acc -= DT;
+      }
+      const c = cap;
+      setState((s) => (c.moving ? { ...s, cap: c } : { ...s, cap: c, lastResult: isHit(c.pos) ? 'hit' : 'miss' }));
+      if (cap.moving) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [moving]);
+
+  // Show the result, then score it and pass the turn (FR-16, FR-17).
+  const lastResult = state.lastResult;
+  useEffect(() => {
+    if (!lastResult) return;
+    const t = window.setTimeout(() => setState((s) => applyResult(s, lastResult === 'hit')), RESULT_MS);
+    return () => window.clearTimeout(t);
+  }, [lastResult]);
 
   useEffect(() => {
     if (state.status !== 'results') return;
@@ -96,29 +78,18 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [state.status]);
 
-  const newGame = () => setState(freshInitialState());
-  const quitToSetup = () => setState((s) => ({ ...s, status: 'setup' }));
-
-  const screen = state.status;
-  const activePlayer = state.players[state.activePlayerIndex];
+  const goHome = () => setState(homeState());
+  const toSetup = () => setState((s) => ({ ...s, status: 'setup', cap: restingCap(0), lastResult: null }));
 
   return (
     <>
-      {screen === 'home' && <HomeScreen onNewGame={startSetup} />}
-      {screen === 'setup' && <GameSetup initial={config} onCancel={cancelSetup} onStart={startGame} />}
-      {screen === 'playing' && activePlayer && (
-        <GameBoard state={state} freshId={freshId} onRoll={handleRoll} onQuit={quitToSetup} onHome={newGame} />
-      )}
-      {screen === 'results' && state.rankings.length > 0 && (
+      {state.status === 'home' && <HomeScreen onNewGame={toSetup} />}
+      {state.status === 'setup' && <GameSetup initial={config} onCancel={goHome} onStart={startGame} />}
+      {state.status === 'playing' && <GameBoard state={state} onFlick={handleFlick} onQuit={toSetup} />}
+      {state.status === 'results' && (
         <>
           {celebrate && <Confetti />}
-          <GameResults
-            rankings={state.rankings}
-            players={state.players}
-            stackSize={state.stackSize}
-            onPlayAgain={() => startGame(config)}
-            onNewGame={newGame}
-          />
+          <GameResults state={state} onPlayAgain={() => startGame(config)} onNewGame={goHome} />
         </>
       )}
     </>

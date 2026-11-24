@@ -1,44 +1,38 @@
 export type GameStatus = 'home' | 'setup' | 'playing' | 'results';
 
-export type DiceFace = 1 | 2 | 3 | 4 | 5 | 6;
-
-export type DiceResult = DiceFace;
+export interface Vec {
+  x: number;
+  y: number;
+}
 
 export interface Player {
   id: string;
   name: string;
   colorIndex: number;
-  /** Running totals, one per filled scoop, bottom (next to the cone) first. */
-  scoops: number[];
-  finished: boolean;
-  /** Total dice rolls taken by this player. */
-  rollsTaken: number;
+  hits: number;
+  flicks: number;
 }
 
-export interface PlayerRanking {
-  player: Player;
-  rank: number;
-  total: number;
+export interface Cap {
+  pos: Vec;
+  vel: Vec;
+  moving: boolean;
 }
 
 export interface GameState {
   status: GameStatus;
   players: Player[];
-  activePlayerIndex: number;
-  turnNumber: number;
-  rankings: PlayerRanking[];
-  /** Latest dice value rolled, null at the start of a turn. */
-  lastRoll: DiceResult | null;
-  /** Human-readable feedback for the most recent action. */
-  message: string;
-  /** Whether the dice is currently animating. */
-  rolling: boolean;
-  /** Scoops per cone for this game. */
-  stackSize: number;
+  /** Index of the player whose turn it is. */
+  active: number;
+  /** The active player's cap. Other caps rest at their start circles. */
+  cap: Cap;
+  /** Set while the result of the last flick is shown, null otherwise. */
+  lastResult: 'hit' | 'miss' | null;
+  targetScore: number;
 }
 
 export interface GameConfig {
-  playerCount: number;
-  stackSize: number;
+  /** One name per player; its length is the player count. */
   playerNames: string[];
+  targetScore: number;
 }
