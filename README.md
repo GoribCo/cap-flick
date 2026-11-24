@@ -21,7 +21,7 @@ npm run check   # engine + physics self-check (Node 22.18+, no extra deps)
 2. Commit and push the workflow and accompanying changes to `main`.
 3. Open **Actions → Deploy to GitHub Pages** to monitor deployment. You can also run it manually using **Run workflow** on `main`.
 
-The expected site URL is https://goribco.github.io/dice-race/.
+The expected site URL is https://goribco.github.io/cap-flick/.
 
 The workflow installs locked dependencies with `npm ci`, builds the app into `dist`, and deploys that artifact using the built-in `GITHUB_TOKEN`. No personal access token or repository secrets are required. Each push to `main` redeploys the site.
 
@@ -30,8 +30,8 @@ The build reads the base path from GitHub Pages configuration, so asset URLs wor
 To preview a production build under the current repository path:
 
 ```sh
-npm run build -- --base /dice-race/
-npm run preview -- --base /dice-race/
+npm run build -- --base /cap-flick/
+npm run preview -- --base /cap-flick/
 ```
 
-Open http://localhost:4173/dice-race/.
+Open http://localhost:4173/cap-flick/.
