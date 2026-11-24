@@ -116,9 +116,11 @@ export function Board({ state, onFlick }: BoardProps) {
               {i !== active && (
                 <circle cx={s.x} cy={s.y} r={CAP_R} fill={color} opacity={0.4} />
               )}
+              {/* top-row players sit across the phone: put their name on their side, facing them */}
               <text
                 x={s.x}
-                y={s.y + START_R + 5}
+                y={i % 2 === 0 ? s.y + START_R + 5 : s.y - START_R - 5}
+                transform={i % 2 === 0 ? undefined : `rotate(180 ${s.x} ${s.y - START_R - 5})`}
                 textAnchor="middle"
                 fontSize={i === active ? 4.4 : 3.6}
                 fontWeight={i === active ? 800 : 600}
