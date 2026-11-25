@@ -74,7 +74,7 @@ export function Board({ state, onFlick }: BoardProps) {
   const activeColor = playerColor(players[active].colorIndex).solid;
 
   return (
-    <div className="mx-auto" style={{ width: 'min(100%, calc((100dvh - 10rem) * 0.5618))' }}>
+    <div className="mx-auto" style={{ width: 'min(100%, calc((100dvh - 4.5rem) * 0.5618))' }}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
@@ -163,6 +163,8 @@ export function Board({ state, onFlick }: BoardProps) {
         />
 
         {lastResult && (
+          // face the player who flicked: top-row players see it rotated on their side of the target
+          <g transform={active % 2 === 1 ? `rotate(180 ${TARGET.x} ${TARGET.y})` : undefined}>
           <text
             key={`${state.players[active].flicks}-${lastResult}`}
             x={TARGET.x}
@@ -176,6 +178,7 @@ export function Board({ state, onFlick }: BoardProps) {
           >
             {lastResult === 'hit' ? 'Hit!' : 'Miss'}
           </text>
+          </g>
         )}
       </svg>
     </div>

@@ -1,6 +1,5 @@
 import { LogOut, Target } from 'lucide-react';
 import type { GameState, Vec } from '@/game/types';
-import { TurnIndicator } from './TurnIndicator';
 import { Board } from './Board';
 
 interface GameBoardProps {
@@ -30,7 +29,9 @@ export function GameBoard({ state, onFlick, onQuit }: GameBoardProps) {
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-3 px-3 py-3">
-        <TurnIndicator player={state.players[state.active]} targetScore={state.targetScore} />
+        <p className="sr-only" aria-live="polite">
+          {state.players[state.active].name}'s turn
+        </p>
         <Board state={state} onFlick={onFlick} />
       </main>
     </div>

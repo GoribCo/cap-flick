@@ -26,6 +26,8 @@ export default function App() {
   const [celebrate, setCelebrate] = useState(false);
 
   const startGame = (cfg: GameConfig) => {
+    // must run inside the click; iPhone Safari has no element fullscreen, so it just stays windowed
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
     setConfig(cfg);
     setState(newGame(cfg));
   };
@@ -78,8 +80,17 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [state.status]);
 
-  const goHome = () => setState(homeState());
-  const toSetup = () => setState((s) => ({ ...s, status: 'setup', cap: restingCap(0), lastResult: null }));
+  const leaveFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  };
+  const goHome = () => {
+    leaveFullscreen();
+    setState(homeState());
+  };
+  const toSetup = () => {
+    leaveFullscreen();
+    setState((s) => ({ ...s, status: 'setup', cap: restingCap(0), lastResult: null }));
+  };
 
   return (
     <>
